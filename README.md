@@ -15,7 +15,7 @@ Claude starts it on its own for any task with more than 5 steps or over 30 minut
 In Claude Code, run:
 
 ```
-/plugin marketplace add billmote/claude-progress-dashboard
+/plugin marketplace add https://github.com/billmote/claude-progress-dashboard.git
 /plugin install progress-dashboard@progress-dashboard
 ```
 
