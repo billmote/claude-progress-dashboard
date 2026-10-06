@@ -1,0 +1,16 @@
+{
+  "name": "progress-dashboard",
+  "owner": {
+    "name": "Bill Mote"
+  },
+  "metadata": {
+    "description": "A live progress page for long Claude Code tasks."
+  },
+  "plugins": [
+    {
+      "name": "progress-dashboard",
+      "source": "./plugins/progress-dashboard",
+      "description": "A live, double-clickable progress page for long Claude tasks."
+    }
+  ]
+}

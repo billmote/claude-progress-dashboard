@@ -1,0 +1,7 @@
+{
+  "name": "progress-dashboard",
+  "version": "1.0.0",
+  "description": "A live, double-clickable progress page for long Claude tasks: steps, questions waiting on you with the default being taken, deliverables, and anything stuck.",
+  "author": { "name": "Bill Mote" },
+  "license": "MIT"
+}
