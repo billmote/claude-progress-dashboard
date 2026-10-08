@@ -49,3 +49,24 @@ Delete `~/.claude/progress-dashboard/style.json` and you will be asked again.
 ## License
 
 MIT
+
+## Changelog
+
+### 1.2.0 (2026-10-08)
+- The page is now built by a small Python script (`scripts/render.py`) instead of a model. Each
+  update takes under a second and costs nothing.
+- Removed the `dashboard-builder` agent and its folder fence hook.
+- Light theme and dense layout options; accent color, title, owner and time zone are configurable.
+
+### 1.1.0 (2026-10-08)
+- One page for all projects, one folder above them, with a tab per project. Each tab still shows
+  every running session.
+- Each project's own page now forwards to the one page.
+- Optional `"root"` setting for projects kept somewhere else.
+
+### 1.0.1 (2026-10-06)
+- Install instructions use the full repository URL.
+
+### 1.0.0 (2026-10-06)
+- First public version: live progress page, questions waiting on you, deliverables, stuck
+  sessions, first-run style questions.
