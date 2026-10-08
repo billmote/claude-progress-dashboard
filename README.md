@@ -10,6 +10,8 @@ It refreshes every 10 seconds and shows:
 
 Claude starts it on its own for any task with more than 5 steps or over 30 minutes.
 
+![Progress dashboard](docs/screenshot.png)
+
 ## Install
 
 In Claude Code, run:
