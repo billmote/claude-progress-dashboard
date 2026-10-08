@@ -34,13 +34,13 @@ Projects somewhere else? Add `"root": "/path/to/projects"` to
 
 ## What is inside
 
-- `progress-dashboard` skill: when to run and when to update
-- `dashboard-builder` agent: builds the page; can only touch `.dashboard/`
-- Three hooks: a reminder on every message, a fence that keeps the builder inside
-  `.dashboard/`, and a check that stops Claude from ending a task while the page still says
-  "working"
+- `progress-dashboard` skill: when to update, and the small JSON file Claude writes per session
+- `scripts/render.py`: builds the page from every project's session files. No model, no
+  dependencies, under a second, so updates cost nothing
+- Two hooks: a reminder on every message, and a check that stops Claude from ending a task while
+  the page still says "working"
 
-Requires `python3` for the hooks.
+Requires `python3`.
 
 ## Change your look
 

@@ -20,7 +20,7 @@ for dd in dirs:
         age = now - datetime.datetime.fromtimestamp(os.path.getmtime(f), datetime.timezone.utc)
         if age < datetime.timedelta(hours=6):
             print(f"The progress dashboard session {s.get('id', os.path.basename(f))} is not marked finished. "
-                  "If the task is done (or stopped), tell dashboard-builder it is finished, then end. "
+                  "If the task is done (or stopped), set \"finished\": true in its session file and re-run render.py, then end. "
                   "If work is still running, update the dashboard now.", file=sys.stderr)
             sys.exit(2)
 sys.exit(0)
