@@ -1,6 +1,6 @@
 ---
 name: progress-dashboard
-description: This skill should be used at the START of any task with more than 5 steps or expected to take longer than 30 minutes (a big migration, a multi-file refactor, a data cleanup, a report build), and after every step of such a task. It keeps a live progress page at .dashboard/index.html in the current folder via the dashboard-builder agent.
+description: This skill should be used at the START of any task with more than 5 steps or expected to take longer than 30 minutes (a big migration, a multi-file refactor, a data cleanup, a report build), and after every step of such a task. It keeps one live progress page for all projects, a tab per project, via the dashboard-builder agent.
 ---
 
 # Progress dashboard
@@ -17,15 +17,24 @@ that still says "working" after the task is done is the worst failure. Update it
 - **At the end**, marking the session finished, BEFORE the final chat reply.
 Never batch several finished steps into one update. Never let two steps pass without one.
 
+## Where things live
+- **Root** = the folder that holds all the user's projects. Default: the parent of the current
+  folder. If `~/.claude/progress-dashboard/style.json` has a `"root"` path, use that instead.
+- **The page**: `<root>/.dashboard/index.html`, one page for every project.
+- **Session data stays in each project**: `<project>/.dashboard/sessions/<id>.json`.
+- **Each project's own** `.dashboard/index.html` is a small page that forwards to the root page
+  (`<meta http-equiv="refresh" content="0; url=../../.dashboard/index.html">`).
+
 ## Before the first step
 1. **Style.** Read `~/.claude/progress-dashboard/style.json`. If it does not exist, ask the user
    once with AskUserQuestion, one picker with three questions: dark or light, dense or airy, one
    accent color (offer four common colors; they can type any hex). Save the answers to that file
    as `{"theme": ..., "density": ..., "accent": ...}`. Never ask again once saved.
 2. **Session id.** `<task-slug>-<YYYYMMDD-HHMM>` in the user's local time, from `date`.
-3. **Build.** Call the `dashboard-builder` agent with: the session id, the style, the task list
+3. **Build.** Call the `dashboard-builder` agent with: the session id, the root path, this
+   project's folder name, the style, the task list
    (with sub-steps where a step is long), and the output of `date '+%Y-%m-%dT%H:%M:%S%z'`.
-4. **Tell the user once**, in one line, the full path to `.dashboard/index.html`: open it in a
+4. **Tell the user once**, in one line, the full path to `<root>/.dashboard/index.html`: open it in a
    browser and leave it open. It refreshes itself.
 
 ## After every update
@@ -45,5 +54,5 @@ default being taken, then keep working with that default. Do not stop and wait.
 
 ## Finish
 1. Tell `dashboard-builder` the session is finished and every step's final state.
-2. Confirm `.dashboard/sessions/<id>.json` contains `"finished": true`.
+2. Confirm `<project>/.dashboard/sessions/<id>.json` contains `"finished": true`.
 3. Only then give the normal short summary in chat.

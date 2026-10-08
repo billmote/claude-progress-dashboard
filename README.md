@@ -6,7 +6,7 @@ It refreshes every 10 seconds and shows:
 - every step, and whether it is done, working or stuck
 - questions waiting on you, with the default Claude is taking so the work never stops
 - files Claude made, as clickable links
-- every Claude session running in the same folder, one card each
+- a tab for every project, each with every Claude session running in it
 
 Claude starts it on its own for any task with more than 5 steps or over 30 minutes.
 
@@ -24,8 +24,13 @@ airy, accent color) and remembers them in `~/.claude/progress-dashboard/style.js
 
 ## Where the page lives
 
-`.dashboard/index.html` in the folder you started Claude in. Claude tells you the path the first
-time. Add `.dashboard/` to your `.gitignore` if you work in a git repo.
+One page for all your projects, one folder above them: if your projects are in `~/code/`, the
+page is `~/code/.dashboard/index.html`. Claude tells you the path the first time. Each project
+keeps its own session data in `.dashboard/` and its own `index.html` there just forwards to the
+one page. Add `.dashboard/` to your `.gitignore` if you work in a git repo.
+
+Projects somewhere else? Add `"root": "/path/to/projects"` to
+`~/.claude/progress-dashboard/style.json`.
 
 ## What is inside
 

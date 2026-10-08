@@ -8,7 +8,7 @@ if d.get("stop_hook_active"):
 dirs = {os.path.join(d.get("cwd") or os.getcwd(), ".dashboard/sessions"), os.path.expanduser("~/.dashboard/sessions")}
 now = datetime.datetime.now(datetime.timezone.utc)
 for dd in dirs:
-    for f in glob.glob(os.path.join(dd, "*.json")):
+    for f in glob.glob(os.path.join(dd, "*.json")) + glob.glob(os.path.join(dd, "*", "*.json")):
         if not os.access(f, os.W_OK):   # other sessions' copies are read-only
             continue
         try:
