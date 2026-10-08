@@ -45,8 +45,8 @@ Call `dashboard-builder` with the same id, what changed, any new deliverable pat
 Some setups run Claude in a cloud workspace linked to the user's computer. Then the page has to
 be copied over after every update. Copy from a new, unique folder each time (reusing a path can
 silently deliver a stale copy), and compare checksums on both sides. An update is not done until
-they match. Also copy other sessions' files from the user's `.dashboard/sessions/` into the
-working copy first, so the page shows every running session.
+they match. Also copy every project's `.dashboard/sessions/` files into the working copy first, so the page
+shows every project and every running session.
 
 ## Decisions
 When a decision is needed from the user, add it to the page's questions list together with the
