@@ -54,6 +54,12 @@ MIT
 
 ## Changelog
 
+### 1.3.0 (2026-10-13)
+- "Waiting on you" no longer piles up. Each card has a **Done** button (remembered in that
+  browser), and questions from finished sessions fold away after 7 days (`expire_days`).
+- Claude now marks a question answered the moment you answer it, sweeps open questions at the
+  start of every session, and drops questions whose default was simply taken when a session ends.
+
 ### 1.2.0 (2026-10-08)
 - The page is now built by a small Python script (`scripts/render.py`) instead of a model. Each
   update takes under a second and costs nothing.

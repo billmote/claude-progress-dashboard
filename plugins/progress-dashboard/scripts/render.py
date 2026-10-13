@@ -13,7 +13,7 @@ then ~/.claude/progress-dashboard/style.json, else defaults.
 import datetime, glob, html, json, os, sys, tempfile
 
 DEFAULTS = {"theme": "dark", "density": "airy", "accent": "#4f8cff",
-            "title": "Work Board", "owner": "you", "timezone": ""}
+            "title": "Work Board", "owner": "you", "timezone": "", "expire_days": 7}
 FORWARD_MARK = "progress-dashboard-forward"
 FORWARD = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
            '<meta http-equiv="refresh" content="0; url=../../.dashboard/index.html">'
@@ -79,6 +79,7 @@ def main():
             .replace("__TITLE__", html.escape(title))
             .replace("__OWNER__", html.escape(style["owner"]))
             .replace("__TZ__", style["timezone"].replace("'", ""))
+            .replace("__EXPIRE__", str(float(style.get("expire_days") or 7)))
             .replace("__ACCENT__", style["accent"].replace(";", ""))
             .replace("__THEME__", "light" if style["theme"] == "light" else "dark")
             .replace("__DENSITY__", "dense" if style["density"] == "dense" else "airy"))
@@ -127,8 +128,16 @@ h1 span{color:var(--accent)}
 /* Waiting on you */
 .waiting{display:flex;flex-direction:column;gap:10px}
 .wq{display:grid;grid-template-columns:1fr auto;gap:4px 18px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;width:100%}
-.wq:hover{border-color:var(--line-2);background:var(--surface-2)}
-.wq .src{font-size:12.5px;color:var(--accent);grid-column:1}
+.wq:hover{border-color:var(--line-2)}
+.wq .src{font-size:12.5px;color:var(--accent);grid-column:1;text-align:left;padding:0}
+.wq .src:hover{text-decoration:underline}
+.wq .acts{grid-column:1/-1;display:flex;gap:12px;align-items:center;margin-top:4px}
+.wq .act{font-size:12.5px;font-weight:600;padding:3px 12px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted)}
+.wq .act:hover{color:var(--fg);border-color:var(--accent)}
+.wq .why{font-size:12px;color:var(--faint)}
+.wq.parked{opacity:.6}
+.parkedlist{display:flex;flex-direction:column;gap:10px}
+.parkedlist .wq{margin-top:8px}
 .wq .when{font-size:12.5px;color:var(--faint);grid-column:2;grid-row:1;text-align:right;white-space:nowrap}
 .wq .q{grid-column:1/-1;font-size:16px;font-weight:550;text-wrap:pretty}
 .wq .def{grid-column:1/-1;font-size:13.5px;color:var(--muted)}
@@ -319,7 +328,7 @@ function norm(s, project){
     finishedAt: s.finished_at || s.finishedAt || (finished ? last : null),
     doing: s.doing_now || s.doingNow || '',
     steps: (s.steps || []).map(st => ({name: st.name, status: normStatus(st.status), note: st.note || '', sub: (st.sub || []).map(x => ({name: x.name, status: normStatus(x.status)}))})),
-    questions: (s.questions || []).map(q => ({text: q.text || q.q, def: q.default || '', at: q.at || last})),
+    questions: (s.questions || []).filter(q => !(q.answered || q.resolved)).map(q => ({text: q.text || q.q, def: q.default || '', at: q.at || last})),
     stuckList: (s.stuck || []).map(x => typeof x === 'string' ? x : (x.reason || x.text || '')).filter(Boolean),
     deliverables: (s.deliverables || []).map(d => ({name: d.name || d.label, shown: d.path || d.value || '', link: linkFor(project, d), at: d.at || d.time || ''}))
   };
@@ -338,11 +347,22 @@ function stuckReasons(s){
   if (isQuiet(s)) r.push(`No word from this session since ${when(s.last)} ${TZ_ABBR} (${agoText(s.lastMs)}).`);
   return r.concat(s.stuckList);
 }
-function openAsks(s){
+const EXPIRE_MS = __EXPIRE__ * 864e5;
+let DISMISSED = {};
+try { DISMISSED = JSON.parse(localStorage.getItem('wb-dismissed') || '{}') || {}; } catch (e) {}
+function saveDismissed(){ try { localStorage.setItem('wb-dismissed', JSON.stringify(DISMISSED)); } catch (e) {} }
+function allAsks(s){
   const out = s.questions.map(q => ({q: q.text, def: q.def, at: q.at}));
-  if (s.raw.next_for_bill && !replaced.has(s.id)) out.push({q: s.raw.next_for_bill, def: 'Nothing happens until you do it.', at: s.last});
-  return out;
+  if (s.raw.next_for_bill && !s.raw.next_done && !replaced.has(s.id)) out.push({q: s.raw.next_for_bill, def: 'Nothing happens until you do it.', at: s.last});
+  return out.map(a => Object.assign(a, {key: s.project + '|' + s.id + '|' + a.q}));
 }
+function askState(s, a){
+  if (DISMISSED[a.key]) return 'dismissed';
+  const t = ms(a.at) || s.lastMs;
+  if (s.finished && Date.now() - t > EXPIRE_MS) return 'old';
+  return 'open';
+}
+function openAsks(s){ return allAsks(s).filter(a => askState(s, a) === 'open'); }
 
 let sel = {project: null, session: null};
 function readHash(){
@@ -365,18 +385,24 @@ function choose(project, session){
 }
 
 function renderWaiting(){
-  const items = [];
-  projects.forEach(p => p.sessions.forEach(s => openAsks(s).forEach(a => items.push({p, s, a}))));
-  items.sort((x, y) => (ms(y.a.at) || 0) - (ms(x.a.at) || 0));
+  const items = [], parked = [];
+  projects.forEach(p => p.sessions.forEach(s => allAsks(s).forEach(a => { const st = askState(s, a); (st === 'open' ? items : parked).push({p, s, a, st}); })));
+  const byTime = (x, y) => (ms(y.a.at) || 0) - (ms(x.a.at) || 0);
+  items.sort(byTime); parked.sort(byTime);
   const el = document.getElementById('waiting');
-  if (!items.length) { el.innerHTML = '<div class="none">Nothing is waiting on you.</div>'; return; }
-  el.innerHTML = items.map(({p, s, a}) => `
-    <button class="wq" data-p="${esc(p.name)}" data-s="${esc(s.id)}">
-      <span class="src">${esc(p.name)} · ${esc(s.title)}</span>
+  const card = ({p, s, a, st}) => `
+    <div class="wq${st === 'open' ? '' : ' parked'}">
+      <button class="src" data-p="${esc(p.name)}" data-s="${esc(s.id)}">${esc(p.name)} · ${esc(s.title)}</button>
       <span class="when tnum">${a.at ? 'Asked ' + esc(when(a.at)) + ' · ' + ago(a.at) : ''}</span>
       <span class="q">${esc(a.q)}</span>
       ${a.def ? `<span class="def"><em>Meanwhile:</em> ${esc(a.def)}</span>` : ''}
-    </button>`).join('');
+      <span class="acts">${st === 'dismissed' ? `<button class="act" data-restore="${esc(a.key)}">Put back</button>` : `<button class="act" data-dismiss="${esc(a.key)}">Done</button>`}${st === 'old' ? '<span class="why">Older than ' + Math.round(EXPIRE_MS / 864e5) + ' days</span>' : ''}</span>
+    </div>`;
+  let open = false; try { open = sessionStorage.getItem('wb-parked') === '1'; } catch (e) {}
+  el.innerHTML = (items.length ? items.map(card).join('') : '<div class="none">Nothing is waiting on you.</div>') +
+    (parked.length ? `<details class="earlier parkedlist" ${open ? 'open' : ''}><summary>Done or older (${parked.length})</summary>${parked.map(card).join('')}</details>` : '');
+  const d = el.querySelector('details');
+  if (d) d.addEventListener('toggle', () => { try { sessionStorage.setItem('wb-parked', d.open ? '1' : '0'); } catch (e) {} });
 }
 
 function renderTabs(){
@@ -454,7 +480,7 @@ function renderDetail(p){
     </div>
     ${!s.finished && s.doing ? `<div class="now">Doing now: <b>${esc(s.doing)}</b></div>` : ''}
     ${r.summary || r.outcome ? `<div class="lede">${esc(r.outcome || r.summary)}</div>` : ''}
-    ${r.next_for_bill && !replaced.has(s.id) ? `<div class="next"><b>Your next step:</b> ${esc(r.next_for_bill)}</div>` : ''}
+    ${r.next_for_bill && !r.next_done && !replaced.has(s.id) ? `<div class="next"><b>Your next step:</b> ${esc(r.next_for_bill)}</div>` : ''}
     ${r.deadline_label ? `<div class="sub">${esc(r.deadline_label)}</div>` : ''}
     ${reasons.length ? `<div class="stuckbox"><h3>${s.finished ? 'Left unresolved' : 'Stuck'}</h3>${reasons.map(x => `<p>${esc(x)}</p>`).join('')}</div>` : ''}
     <div class="cols">
@@ -483,10 +509,15 @@ function render(){
 }
 
 document.addEventListener('click', e => {
+  const x = e.target.closest('[data-dismiss],[data-restore]');
+  if (x) {
+    if (x.dataset.dismiss) DISMISSED[x.dataset.dismiss] = Date.now(); else delete DISMISSED[x.dataset.restore];
+    saveDismissed(); render(); return;
+  }
   const b = e.target.closest('[data-p]');
   if (!b) return;
   choose(b.dataset.p, b.dataset.s || null);
-  if (b.classList.contains('wq') || b.classList.contains('frow')) document.getElementById('detail').scrollIntoView({behavior: 'smooth', block: 'start'});
+  if (b.classList.contains('src') || b.classList.contains('frow')) document.getElementById('detail').scrollIntoView({behavior: 'smooth', block: 'start'});
 });
 window.addEventListener('hashchange', () => { readHash(); render(); });
 

@@ -44,7 +44,7 @@ Never batch several finished steps into one update. Never let two steps pass wit
     {"name": "Copy tables", "status": "working", "sub": [{"name": "customers", "status": "done"}]},
     {"name": "Switch the app over", "status": "not started"}
   ],
-  "questions": [{"q": "Drop the old tables afterwards?", "default": "Keeping them for now", "at": "..."}],
+  "questions": [{"q": "Drop the old tables afterwards?", "default": "Keeping them for now", "at": "...", "answered": false}],
   "stuck": ["One plain sentence per thing that is stuck"],
   "deliverables": [{"label": "Migration log", "value": "logs/migrate.txt", "at": "..."}],
   "panels": [{"title": "Numbers", "rows": [{"label": "Rows copied", "value": "1,204,331"}]}],
@@ -59,7 +59,8 @@ make one up. Plain English everywhere, no jargon.
 1. **Style.** Read `~/.claude/progress-dashboard/style.json`. If it does not exist, ask the user
    once with AskUserQuestion, one picker with three questions: dark or light, dense or airy, one
    accent color (offer four; they can type any hex). Save `{"theme", "density", "accent"}` there.
-   Optional keys: `title` (default "Work Board"), `owner` (default "you"), `timezone`, `root`.
+   Optional keys: `title` (default "Work Board"), `owner` (default "you"), `timezone`, `root`,
+   `expire_days` (default 7).
 2. **Session id.** `<task-slug>-<YYYYMMDD-HHMM>` in the user's local time.
 3. **Write the session file and render.** Then tell the user once, in one line, the full path to
    `<root>/.dashboard/index.html`: open it in a browser and leave it open.
@@ -71,6 +72,19 @@ Edit the session file (step states, `doing_now`, questions, deliverables, a log 
 If Claude runs somewhere other than the user's computer (a cloud workspace linked to it), write
 the session file to the user's computer, compare checksums on both sides, and run the script
 there. Copy from a new, unique folder each time; reusing a path can silently deliver a stale copy.
+
+## Cleanup (the board must not pile up)
+- **Answered = gone.** The moment the user answers a question or does the thing (in this chat or any
+  other), set `"answered": true` on that question in its session file and render. For a
+  `next_for_bill` line, set `"next_done": true`. Do this even if the question belongs to another
+  session or project.
+- **Sweep at the start of every session.** Read the open questions in every session file under
+  root. Any that this request settles, or that you can see are already done, mark answered.
+- **Finish clean.** When a session finishes, drop every question where the default was taken and
+  nothing more is needed from the user; record it as a log line ("Went with: ...") instead. Keep only
+  real decisions and real actions the user must take.
+- The page also folds away questions from finished sessions after `expire_days` (style.json,
+  default 7), and each card has a **Done** button that hides it in that browser.
 
 ## Decisions
 When a decision is needed from the user, add it to `questions` with the default being taken,
