@@ -1,6 +1,6 @@
 {
   "name": "progress-dashboard",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "One live, double-clickable progress page for all your projects, a tab per project, built by a small script (no model): steps, questions waiting on you with the default being taken, deliverables, and anything stuck.",
   "author": {
     "name": "Bill Mote"

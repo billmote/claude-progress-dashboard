@@ -39,10 +39,18 @@ Projects somewhere else? Add `"root": "/path/to/projects"` to
 - `progress-dashboard` skill: when to update, and the small JSON file Claude writes per session
 - `scripts/render.py`: builds the page from every project's session files. No model, no
   dependencies, under a second, so updates cost nothing
-- Two hooks: a reminder on every message, and a check that stops Claude from ending a task while
-  the page still says "working"
+- Two hooks: a one-time reminder when a session starts, and a one-time nudge if Claude tries to
+  stop while a dashboard session touched in the last 30 minutes still says "working"
 
 Requires `python3`.
+
+## Turning off the nudges
+
+Add either key to `~/.claude/progress-dashboard/style.json`:
+
+```json
+{"remind": false, "finish_check": false}
+```
 
 ## Change your look
 
@@ -53,6 +61,12 @@ Delete `~/.claude/progress-dashboard/style.json` and you will be asked again.
 MIT
 
 ## Changelog
+
+### 1.4.0 (2026-10-20)
+- Gentler hooks. The reminder now appears once when a session starts instead of on every
+  message. The end-of-task check nudges at most once per session, only for dashboard sessions
+  touched in the last 30 minutes, so another running session can no longer keep blocking yours.
+- Both can be turned off in `style.json` (`"remind": false`, `"finish_check": false`).
 
 ### 1.3.0 (2026-10-13)
 - "Waiting on you" no longer piles up. Each card has a **Done** button (remembered in that
