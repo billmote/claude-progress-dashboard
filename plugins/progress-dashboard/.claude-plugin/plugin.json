@@ -5,5 +5,13 @@
   "author": {
     "name": "Bill Mote"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://github.com/billmote/claude-progress-dashboard",
+  "repository": "https://github.com/billmote/claude-progress-dashboard",
+  "keywords": [
+    "progress",
+    "dashboard",
+    "status",
+    "long tasks"
+  ]
 }
